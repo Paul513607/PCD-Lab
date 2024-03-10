@@ -26,8 +26,8 @@ public class UdpClient implements Client {
 
             long totalMessageBytes = 0;
             for (int i = 0; i < numMessages; i++) {
-                // byte[] message = this.buildMessageFile(ClientApp.LARGE_FILE_PATH);
-                byte[] message = this.buildMessageString();
+                byte[] message = this.buildMessageFile(ClientApp.LARGE_FILE_PATH);
+                // byte[] message = this.buildMessageString();
                 totalMessageBytes += sendSizeAndMessage(clientSocket, serverAddress, message);
             }
 
@@ -75,7 +75,9 @@ public class UdpClient implements Client {
             // Send the actual message chunk
             sendMessage(socket, serverAddress, chunk);
             totalBytesSent += remainingBytes;
-            readStatus(socket);
+
+            // Wait for acknowledgment
+            readStatus(socket, false);
         }
 
         return totalBytesSent;
@@ -96,10 +98,14 @@ public class UdpClient implements Client {
         String endMessage = "END";
         byte[] endMessageBytes = endMessage.getBytes();
         sendSizeAndMessage(socket, serverAddress, endMessageBytes);
-        readStatus(socket);
+        readStatus(socket, true);
     }
 
-    private static boolean readStatus(DatagramSocket socket) throws IOException {
+    private static boolean readStatus(DatagramSocket socket, boolean force) throws IOException {
+        if (!ClientApp.stopAndWait && !force) {
+            return true;
+        }
+
         byte[] receiveData = new byte[ClientApp.CHUNK_SIZE];
         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
         socket.receive(receivePacket);

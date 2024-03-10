@@ -29,7 +29,7 @@ public class UdpClientHandler implements Runnable, ClientHandler {
     public void run() {
         try {
             // Acknowledge the connection
-            sendStatus(socket, clientAddress, clientPort, "[OK] Connection Established");
+            sendStatus(socket, clientAddress, clientPort, "[OK] Connection Established", true);
 
             int totalMessageCount = 0;
             long totalMessageBytes = 0;
@@ -43,7 +43,7 @@ public class UdpClientHandler implements Runnable, ClientHandler {
 
                 // Handle the end signal
                 if (size == 3 && new String(messageData).equals("END")) {
-                    sendStatus(socket, clientAddress, clientPort, "[OK] End Signal Received");
+                    sendStatus(socket, clientAddress, clientPort, "[OK] End Signal Received", true);
                     break;
                 }
 
@@ -53,7 +53,8 @@ public class UdpClientHandler implements Runnable, ClientHandler {
                 totalMessageCount++;
                 totalMessageBytes += size;
 
-                sendStatus(socket, clientAddress, clientPort, "[OK] Message Received");
+                // Perform acknowledgement
+                sendStatus(socket, clientAddress, clientPort, "[OK] Message Received", false);
             }
 
             printServerStatistics(protocol, totalMessageCount, totalMessageBytes);
@@ -69,7 +70,10 @@ public class UdpClientHandler implements Runnable, ClientHandler {
         System.out.println("Number of bytes read: " + totalBytesReceived + " bytes (" + ((double) totalBytesReceived / (1024 * 1024 * 1024)) + " GB)");
     }
 
-    private void sendStatus(DatagramSocket socket, InetAddress clientAddress, int clientPort, String status) throws IOException {
+    private void sendStatus(DatagramSocket socket, InetAddress clientAddress, int clientPort, String status, boolean force) throws IOException {
+        if (!ServerApp.stopAndWait && !force) {
+            return;
+        }
         byte[] statusBytes = status.getBytes();
         DatagramPacket sendPacket = new DatagramPacket(statusBytes, statusBytes.length, clientAddress, clientPort);
         socket.send(sendPacket);
@@ -100,6 +104,8 @@ public class UdpClientHandler implements Runnable, ClientHandler {
 
             byteArrayOutputStream.write(buffer, 0, receivePacket.getLength());
             totalBytesRead += receivePacket.getLength();
+
+            sendStatus(socket, clientAddress, clientPort, "[OK] Chunk Received", false);
         }
 
         return byteArrayOutputStream.toByteArray();

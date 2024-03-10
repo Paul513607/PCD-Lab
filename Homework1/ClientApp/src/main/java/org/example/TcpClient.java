@@ -14,7 +14,7 @@ public class TcpClient implements Client {
             System.out.println("Connecting to TCP server at " + host + ":" + port + "...");
 
             // Acknowledge the connection
-            readStatus(in);
+            readStatus(in, true);
 
             long startTime = System.currentTimeMillis();
 
@@ -48,7 +48,10 @@ public class TcpClient implements Client {
         System.out.println("Number of bytes sent: " + totalBytesSent + " bytes (" + ((double) totalBytesSent / (1024 * 1024 * 1024)) + " GB)");
     }
 
-    private boolean readStatus(DataInputStream in) throws IOException {
+    private boolean readStatus(DataInputStream in, boolean force) throws IOException {
+        if (!ClientApp.stopAndWait && !force) {
+            return true;
+        }
         String status = in.readUTF();
         System.out.println("Server Status: " + status);
         return status.startsWith("[OK]");
@@ -64,7 +67,7 @@ public class TcpClient implements Client {
         out.flush();
 
         // Wait for acknowledgment
-        boolean ok = readStatus(in);
+        boolean ok = readStatus(in, true);
 
         if (!ok) {
             return 0;
@@ -80,10 +83,13 @@ public class TcpClient implements Client {
             out.flush();
 
             totalBytesSent += bytesToSend;
+
+            // Wait for acknowledgment
+            readStatus(in, false);
         }
 
         // Wait for acknowledgment
-        readStatus(in);
+        readStatus(in, false);
 
         return totalBytesSent;
     }
@@ -92,7 +98,7 @@ public class TcpClient implements Client {
         out.writeInt(3);
         out.write("END".getBytes());
         out.flush();
-        readStatus(in);
+        readStatus(in, true);
     }
 
     private byte[] buildMessageString() {

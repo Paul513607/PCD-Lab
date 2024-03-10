@@ -24,7 +24,7 @@ public class TcpClientHandler implements Runnable, ClientHandler {
             DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
 
             // Acknowledge the connection
-            sendStatus(out, "[OK] Connection Established");
+            sendStatus(out, "[OK] Connection Established", true);
 
             int totalMessageCount = 0;
             long totalMessageBytes = 0;
@@ -34,19 +34,23 @@ public class TcpClientHandler implements Runnable, ClientHandler {
                 int messageSize = readMessageSize(in, out);
                 System.out.println("Received message size: " + messageSize + " bytes");
                 if (messageSize > MAX_MESSAGE_SIZE) {
-                    sendStatus(out, "[ERROR] Message size exceeds maximum allowed size");
+                    sendStatus(out, "[ERROR] Message size exceeds maximum allowed size", true);
                     continue;
                 }
-                sendStatus(out, "[OK] Message Size Received");
+                sendStatus(out, "[OK] Message Size Received", true);
 
-                if (messageSize == 3 && Arrays.equals(readMessage(in, messageSize), "END".getBytes())) {
-                    sendStatus(out, "[OK] End Signal Received");
+                if (messageSize == 3 && Arrays.equals(readMessage(in, out, messageSize), "END".getBytes())) {
+                    sendStatus(out, "[OK] End Signal Received", true);
                     break;
                 }
 
                 // Read the message in chunks
-                byte[] message = readMessage(in, messageSize);
-                sendStatus(out, "[OK] Message Received");
+                byte[] message = readMessage(in, out, messageSize);
+
+                // Perform acknowledgement
+                sendStatus(out, "[OK] Message Received", false);
+
+                // handleMessageString(message, clientNumber);
                 handleMessageFile(message, clientNumber);
 
                 totalMessageCount++;
@@ -70,7 +74,10 @@ public class TcpClientHandler implements Runnable, ClientHandler {
         System.out.println("Number of bytes read: " + totalBytesReceived + " bytes (" + ((double) totalBytesReceived / (1024 * 1024 * 1024)) + " GB)");
     }
 
-    private void sendStatus(DataOutputStream out, String status) throws IOException {
+    private void sendStatus(DataOutputStream out, String status, boolean force) throws IOException {
+        if (!ServerApp.stopAndWait && !force) {
+            return;
+        }
         out.writeUTF(status);
         out.flush();
     }
@@ -81,7 +88,7 @@ public class TcpClientHandler implements Runnable, ClientHandler {
     }
 
 
-    private byte[] readMessage(DataInputStream in, long messageSize) throws IOException {
+    private byte[] readMessage(DataInputStream in, DataOutputStream out, long messageSize) throws IOException {
         byte[] buffer = new byte[ServerApp.CHUNK_SIZE];
         long totalBytesRead = 0;
         int bytesRead;
@@ -96,6 +103,9 @@ public class TcpClientHandler implements Runnable, ClientHandler {
 
             byteArrayOutputStream.write(buffer, 0, bytesRead);
             totalBytesRead += bytesRead;
+
+
+            sendStatus(out, "[OK] Chunk Received", false);
         }
 
         return byteArrayOutputStream.toByteArray();

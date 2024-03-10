@@ -9,6 +9,9 @@ public class ClientApp {
     public static final int PORT = 12345;
     public static final String LARGE_FILE_PATH = "/home/paul/tempData/client/largeFile.txt";
 
+    public static boolean streaming = false;
+    public static boolean stopAndWait = false;
+
     public static void main(String[] args) {
         String host = ADDRESS;
         int port = PORT;
@@ -29,6 +32,20 @@ public class ClientApp {
         } else {
             System.out.println("Invalid protocol specified. Using TCP by default.");
             client = new TcpClient();
+        }
+
+        if (args.length > 1) {
+            if (args[1].equalsIgnoreCase("streaming")) {
+                streaming = true;
+            } else if (args[1].equalsIgnoreCase("stopAndWait")) {
+                stopAndWait = true;
+            } else {
+                System.out.println("Invalid mode specified. Using default mode.");
+                stopAndWait = true;
+            }
+        } else {
+            System.out.println("No mode specified. Using default mode.");
+            stopAndWait = true;
         }
 
         client.startClient(protocol, host, port, numMessages);
