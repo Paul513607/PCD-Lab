@@ -16,22 +16,21 @@ public class ServerApp {
 
     public static void main(String[] args) {
         int port = PORT;
-        int maxClients = MAX_CLIENTS; // Adjust this value to set the maximum number of clients
+        int maxClients = MAX_CLIENTS;
 
-        // Choose the protocol (TCP or UDP)
         String protocol = "tcp";
         Server server;
         if (args.length == 0) {
             System.out.println("No protocol specified. Using TCP by default.");
-            server = new TcpServer();
+            server = new TcpServer(maxClients);
         } else if (args[0].equalsIgnoreCase("udp")) {
             protocol = "udp";
             server = new UdpServer();
         } else if (args[0].equalsIgnoreCase("tcp")) {
-            server = new TcpServer();
+            server = new TcpServer(maxClients);
         } else {
             System.out.println("Invalid protocol specified. Using TCP by default.");
-            server = new TcpServer();
+            server = new TcpServer(maxClients);
         }
 
         if (args.length > 1) {
@@ -47,6 +46,9 @@ public class ServerApp {
             System.out.println("No mode specified. Using default mode.");
             stopAndWait = true;
         }
+
+        stopAndWait = false;
+        streaming = !stopAndWait;
 
         server.startServer(protocol, port, maxClients);
     }

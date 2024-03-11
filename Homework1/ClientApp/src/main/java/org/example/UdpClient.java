@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class UdpClient implements Client {
-    private static final String HANDSHAKE_MESSAGE = "HELLO_SERVER";
+    private static final String HANDSHAKE_MESSAGE = "HANDSHAKE";
 
     @Override
     public void startClient(String protocol, String host, int port, int numMessages) {
@@ -19,20 +19,17 @@ public class UdpClient implements Client {
 
             System.out.println("Connecting to UDP server at " + host + ":" + port + "...");
 
-            // Perform the handshake
             performHandshake(clientSocket, serverAddress);
 
             long startTime = System.currentTimeMillis();
 
             long totalMessageBytes = 0;
             for (int i = 0; i < numMessages; i++) {
-                byte[] message = this.buildMessageFile(ClientApp.LARGE_FILE_PATH);
-                // byte[] message = this.buildMessageString();
+                byte[] message = this.buildMessageLargeFile();
                 totalMessageBytes += sendSizeAndMessage(clientSocket, serverAddress, message);
             }
 
-            // Send the end signal
-            sendMessageEnd(clientSocket, serverAddress);
+            sendMessageEnd(clientSocket, serverAddress, 0);
 
             long endTime = System.currentTimeMillis();
             long transmissionTime = endTime - startTime;
@@ -61,10 +58,8 @@ public class UdpClient implements Client {
     private int sendSizeAndMessage(DatagramSocket socket, InetAddress serverAddress, byte[] messageBytes) throws Exception {
         byte[] sizeBytes = intToBytes(messageBytes.length);
 
-        // Send the size first
         sendMessage(socket, serverAddress, sizeBytes);
 
-        // Split the message into chunks and send each chunk
         int totalBytesSent = 0;
         int chunkSize = 1024;
 
@@ -72,11 +67,9 @@ public class UdpClient implements Client {
             int remainingBytes = Math.min(chunkSize, messageBytes.length - offset);
             byte[] chunk = Arrays.copyOfRange(messageBytes, offset, offset + remainingBytes);
 
-            // Send the actual message chunk
             sendMessage(socket, serverAddress, chunk);
             totalBytesSent += remainingBytes;
 
-            // Wait for acknowledgment
             readStatus(socket, false);
         }
 
@@ -94,11 +87,11 @@ public class UdpClient implements Client {
         socket.send(sendPacket);
     }
 
-    private void sendMessageEnd(DatagramSocket socket, InetAddress serverAddress) throws Exception {
+    private void sendMessageEnd(DatagramSocket socket, InetAddress serverAddress, int retry) throws Exception {
         String endMessage = "END";
         byte[] endMessageBytes = endMessage.getBytes();
         sendSizeAndMessage(socket, serverAddress, endMessageBytes);
-        readStatus(socket, true);
+        System.out.println(readStatus(socket, true));
     }
 
     private static boolean readStatus(DatagramSocket socket, boolean force) throws IOException {
@@ -116,15 +109,28 @@ public class UdpClient implements Client {
         return status.startsWith("[OK]");
     }
 
+    private boolean readEndStatus(DatagramSocket socket, boolean force) throws IOException {
+        if (!ClientApp.stopAndWait && !force) {
+            return true;
+        }
+
+        byte[] receiveData = new byte[ClientApp.CHUNK_SIZE];
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        socket.receive(receivePacket);
+
+        String status = new String(receivePacket.getData(), 0, receivePacket.getLength());
+        System.out.println("Server Status: " + status);
+
+        return status.equals("[OK] End Signal Received");
+    }
+
     private byte[] buildMessageString() {
-        String message = "This is a sample message from the client.";
+        String message = "Hello world!";
         return message.getBytes();
     }
 
     private byte[] buildMessageFile(String filePath) {
-        // for example, use largeFile.txt from the resources folder
         File file = new File(filePath);
-        // read the file bytes
         byte[] fileBytes = new byte[(int) file.length()];
         try (FileInputStream fileInputStream = new FileInputStream(file)) {
             fileInputStream.read(fileBytes);
@@ -136,6 +142,6 @@ public class UdpClient implements Client {
     }
 
     private byte[] buildMessageLargeFile() {
-        return buildMessageFile("/home/paul/tempData/client/largeFile.txt");
+        return buildMessageFile("file");
     }
 }

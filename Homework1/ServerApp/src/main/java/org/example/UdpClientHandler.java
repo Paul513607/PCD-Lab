@@ -11,13 +11,15 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class UdpClientHandler implements Runnable, ClientHandler {
+    private final UdpServer server;
     private final DatagramSocket socket;
     private final InetAddress clientAddress;
     private final int clientPort;
     private final String protocol;
     private final int clientNumber;
 
-    public UdpClientHandler(DatagramSocket socket, InetAddress clientAddress, int clientPort, String protocol, int clientNumber) {
+    public UdpClientHandler(UdpServer server, DatagramSocket socket, InetAddress clientAddress, int clientPort, String protocol, int clientNumber) {
+        this.server = server;
         this.socket = socket;
         this.clientAddress = clientAddress;
         this.clientPort = clientPort;
@@ -28,34 +30,34 @@ public class UdpClientHandler implements Runnable, ClientHandler {
     @Override
     public void run() {
         try {
-            // Acknowledge the connection
             sendStatus(socket, clientAddress, clientPort, "[OK] Connection Established", true);
 
             int totalMessageCount = 0;
             long totalMessageBytes = 0;
 
             while (true) {
-                // Read the size first
                 int size = readMessageSize(socket, clientAddress, clientPort);
 
-                // Receive the actual message
                 byte[] messageData = readMessage(socket, clientAddress, clientPort, size);
 
-                // Handle the end signal
                 if (size == 3 && new String(messageData).equals("END")) {
                     sendStatus(socket, clientAddress, clientPort, "[OK] End Signal Received", true);
                     break;
                 }
 
-                // handleMessageFile(messageData, clientNumber);
-                handleMessageString(messageData, clientNumber);
+                handleMessageFile(messageData, clientNumber);
+                // handleMessageString(messageData, clientNumber);
 
-                totalMessageCount++;
-                totalMessageBytes += size;
+                if (messageData.length > 0) {
+                    totalMessageCount++;
+                    totalMessageBytes += messageData.length;
+                }
 
-                // Perform acknowledgement
                 sendStatus(socket, clientAddress, clientPort, "[OK] Message Received", false);
             }
+
+            server.addTotalMessageCount(totalMessageCount);
+            server.addTotalMessageBytes(totalMessageBytes);
 
             printServerStatistics(protocol, totalMessageCount, totalMessageBytes);
         } catch (IOException e) {
@@ -64,7 +66,7 @@ public class UdpClientHandler implements Runnable, ClientHandler {
     }
 
     @Override
-    public void printServerStatistics(String protocol, int totalMessagesReceived, long totalBytesReceived) {
+        public void printServerStatistics(String protocol, int totalMessagesReceived, long totalBytesReceived) {
         System.out.println("\nServer statistics for " + protocol.toUpperCase() + ":");
         System.out.println("Number of messages read: " + totalMessagesReceived);
         System.out.println("Number of bytes read: " + totalBytesReceived + " bytes (" + ((double) totalBytesReceived / (1024 * 1024 * 1024)) + " GB)");
@@ -112,12 +114,11 @@ public class UdpClientHandler implements Runnable, ClientHandler {
     }
 
     private void handleMessageString(byte[] message, int clientNumber) {
-        // Process the received message as needed
         System.out.println("Received message: " + new String(message));
     }
 
     private void handleMessageFile(byte[] message, int clientNumber) {
-        File file = new File("/home/paul/tempData/server/receivedFile_client_" + clientNumber + ".txt");
+        File file = new File("dir/receivedFile_client_" + clientNumber + ".txt");
         try {
             file.createNewFile();
             FileOutputStream fileOutputStream = new FileOutputStream(file);

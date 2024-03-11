@@ -16,9 +16,9 @@ public class ClientApp {
         String host = ADDRESS;
         int port = PORT;
 
-        int numMessages = 1000;
+        // 64 KB, 1MB, 100MB, 500MB, 1GB, 5GB, 10GB
+        int numMessages = 1 * 16;
 
-        // Choose the protocol (TCP or UDP)
         String protocol = "tcp";
         Client client;
         if (args.length == 0) {
@@ -46,6 +46,10 @@ public class ClientApp {
         } else {
             System.out.println("No mode specified. Using default mode.");
             stopAndWait = true;
+        }
+
+        if (args.length > 2) {
+            port = Integer.parseInt(args[2]);
         }
 
         client.startClient(protocol, host, port, numMessages);

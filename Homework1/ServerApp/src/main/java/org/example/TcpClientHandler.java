@@ -5,13 +5,15 @@ import java.net.Socket;
 import java.util.Arrays;
 
 public class TcpClientHandler implements Runnable, ClientHandler {
+    private final TcpServer server;
     private final Socket clientSocket;
     private final String protocol;
     private final int clientNumber;
 
     private static final int MAX_MESSAGE_SIZE = 65535;
 
-    public TcpClientHandler(Socket clientSocket, String protocol, int clientNumber) {
+    public TcpClientHandler(TcpServer server, Socket clientSocket, String protocol, int clientNumber) {
+        this.server = server;
         this.clientSocket = clientSocket;
         this.protocol = protocol;
         this.clientNumber = clientNumber;
@@ -23,14 +25,12 @@ public class TcpClientHandler implements Runnable, ClientHandler {
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
             DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
 
-            // Acknowledge the connection
             sendStatus(out, "[OK] Connection Established", true);
 
             int totalMessageCount = 0;
             long totalMessageBytes = 0;
 
             while (true) {
-                // Read the message size
                 int messageSize = readMessageSize(in, out);
                 System.out.println("Received message size: " + messageSize + " bytes");
                 if (messageSize > MAX_MESSAGE_SIZE) {
@@ -44,10 +44,8 @@ public class TcpClientHandler implements Runnable, ClientHandler {
                     break;
                 }
 
-                // Read the message in chunks
                 byte[] message = readMessage(in, out, messageSize);
 
-                // Perform acknowledgement
                 sendStatus(out, "[OK] Message Received", false);
 
                 // handleMessageString(message, clientNumber);
@@ -56,6 +54,9 @@ public class TcpClientHandler implements Runnable, ClientHandler {
                 totalMessageCount++;
                 totalMessageBytes += messageSize;
             }
+
+            server.addTotalMessageBytes(totalMessageBytes);
+            server.addTotalMessageCount(totalMessageCount);
 
             in.close();
             out.close();
@@ -94,16 +95,13 @@ public class TcpClientHandler implements Runnable, ClientHandler {
         int bytesRead;
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
         while (totalBytesRead < messageSize) {
             bytesRead = in.read(buffer, 0, (int) Math.min(buffer.length, messageSize - totalBytesRead));
             if (bytesRead == -1) {
                 break;
             }
-
             byteArrayOutputStream.write(buffer, 0, bytesRead);
             totalBytesRead += bytesRead;
-
 
             sendStatus(out, "[OK] Chunk Received", false);
         }
@@ -112,12 +110,11 @@ public class TcpClientHandler implements Runnable, ClientHandler {
     }
 
     private void handleMessageString(byte[] message, int clientNumber) {
-        // Process the received message as needed
         System.out.println("Received message: " + new String(message));
     }
 
     private void handleMessageFile(byte[] message, int clientNumber) {
-        File file = new File("/home/paul/tempData/server/receivedFile_client_" + clientNumber + ".txt");
+        File file = new File("dir/receivedFile_client_" + clientNumber + ".txt");
         try {
             file.createNewFile();
             FileOutputStream fileOutputStream = new FileOutputStream(file);
