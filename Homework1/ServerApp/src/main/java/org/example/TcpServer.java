@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TcpServer implements Server {
+    private final TrafficMonitor trafficMonitor = new TrafficMonitor();
     private final ExecutorService executorService;
     boolean isRunning = true;
 
@@ -61,7 +62,7 @@ public class TcpServer implements Server {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Accepted connection from " + clientSocket.getInetAddress());
 
-                Runnable clientHandler = new TcpClientHandler(this, clientSocket, protocol, clientCounter + 1);
+                Runnable clientHandler = new TcpClientHandler(this, clientSocket, protocol, clientCounter + 1, trafficMonitor);
                 clientCounter++;
                 executorService.submit(clientHandler);
             }
@@ -82,5 +83,9 @@ public class TcpServer implements Server {
         System.out.println("\nServer statistics for " + protocol.toUpperCase() + ":");
         System.out.println("Number of messages read: " + totalMessagesReceived);
         System.out.println("Number of bytes read: " + totalBytesReceived + " bytes (" + ((double) totalBytesReceived / (1024 * 1024 * 1024)) + " GB)");
+
+        System.out.println("Traffic Monitor stats:");
+        System.out.println("Bytes sent: " + trafficMonitor.getBytesSent());
+        System.out.println("Bytes received: " + trafficMonitor.getBytesReceived());
     }
 }

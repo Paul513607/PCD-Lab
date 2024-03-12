@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.util.Arrays;
 
 public class TcpClientHandler implements Runnable, ClientHandler {
+    private final TrafficMonitor trafficMonitor;
     private final TcpServer server;
     private final Socket clientSocket;
     private final String protocol;
@@ -12,11 +13,12 @@ public class TcpClientHandler implements Runnable, ClientHandler {
 
     private static final int MAX_MESSAGE_SIZE = 65535;
 
-    public TcpClientHandler(TcpServer server, Socket clientSocket, String protocol, int clientNumber) {
+    public TcpClientHandler(TcpServer server, Socket clientSocket, String protocol, int clientNumber, TrafficMonitor trafficMonitor) {
         this.server = server;
         this.clientSocket = clientSocket;
         this.protocol = protocol;
         this.clientNumber = clientNumber;
+        this.trafficMonitor = trafficMonitor;
     }
 
     @Override
@@ -90,6 +92,7 @@ public class TcpClientHandler implements Runnable, ClientHandler {
 
 
     private byte[] readMessage(DataInputStream in, DataOutputStream out, long messageSize) throws IOException {
+        trafficMonitor.addBytesSent(messageSize);
         byte[] buffer = new byte[ServerApp.CHUNK_SIZE];
         long totalBytesRead = 0;
         int bytesRead;
@@ -105,6 +108,7 @@ public class TcpClientHandler implements Runnable, ClientHandler {
 
             sendStatus(out, "[OK] Chunk Received", false);
         }
+        trafficMonitor.addBytesReceived(totalBytesRead);
 
         return byteArrayOutputStream.toByteArray();
     }

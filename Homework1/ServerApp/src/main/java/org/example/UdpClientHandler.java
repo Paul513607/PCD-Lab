@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class UdpClientHandler implements Runnable, ClientHandler {
+    private final TrafficMonitor trafficMonitor;
     private final UdpServer server;
     private final DatagramSocket socket;
     private final InetAddress clientAddress;
@@ -18,13 +19,14 @@ public class UdpClientHandler implements Runnable, ClientHandler {
     private final String protocol;
     private final int clientNumber;
 
-    public UdpClientHandler(UdpServer server, DatagramSocket socket, InetAddress clientAddress, int clientPort, String protocol, int clientNumber) {
+    public UdpClientHandler(UdpServer server, DatagramSocket socket, InetAddress clientAddress, int clientPort, String protocol, int clientNumber, TrafficMonitor trafficMonitor) {
         this.server = server;
         this.socket = socket;
         this.clientAddress = clientAddress;
         this.clientPort = clientPort;
         this.protocol = protocol;
         this.clientNumber = clientNumber;
+        this.trafficMonitor = trafficMonitor;
     }
 
     @Override
@@ -96,6 +98,7 @@ public class UdpClientHandler implements Runnable, ClientHandler {
     }
 
     private byte[] readMessage(DatagramSocket socket, InetAddress clientAddress, int clientPort, int messageSize) throws IOException {
+        trafficMonitor.addBytesSent(messageSize);
         int totalBytesRead = 0;
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
@@ -110,6 +113,7 @@ public class UdpClientHandler implements Runnable, ClientHandler {
             sendStatus(socket, clientAddress, clientPort, "[OK] Chunk Received", false);
         }
 
+        trafficMonitor.addBytesReceived(totalBytesRead);
         return byteArrayOutputStream.toByteArray();
     }
 

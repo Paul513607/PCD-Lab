@@ -6,6 +6,7 @@ import java.net.InetAddress;
 import java.util.Scanner;
 
 public class UdpServer implements Server {
+    private final TrafficMonitor trafficMonitor = new TrafficMonitor();
     private boolean isRunning = true;
 
     private int totalMessageCount = 0;
@@ -69,7 +70,7 @@ public class UdpServer implements Server {
             System.out.println("Accepted connection at " + clientAddress + ":" + clientPort);
 
             if (receivedData.equals("HANDSHAKE")) {
-                return new UdpClientHandler(this, serverSocket, clientAddress, clientPort, "UDP", 0);
+                return new UdpClientHandler(this, serverSocket, clientAddress, clientPort, "UDP", 0, trafficMonitor);
             } else {
                 System.out.println("Invalid handshake message received");
                 return null;
@@ -84,6 +85,10 @@ public class UdpServer implements Server {
         System.out.println("\nServer statistics for " + protocol.toUpperCase() + ":");
         System.out.println("Number of messages read: " + totalMessagesReceived);
         System.out.println("Number of bytes read: " + totalBytesReceived + " bytes (" + ((double) totalBytesReceived / (1024 * 1024 * 1024)) + " GB)");
+
+        System.out.println("Traffic Monitor stats:");
+        System.out.println("Bytes sent: " + trafficMonitor.getBytesSent());
+        System.out.println("Bytes received: " + trafficMonitor.getBytesReceived());
     }
 
     public synchronized void addTotalMessageCount(int threadMessageCount) {
