@@ -112,6 +112,6 @@ public class TcpClient implements Client {
     }
 
     private byte[] buildMessageLargeFile() {
-        return buildMessageFile("file");
+        return buildMessageFile("/home/paul/tempData/client/largeFile.txt");
     }
 }

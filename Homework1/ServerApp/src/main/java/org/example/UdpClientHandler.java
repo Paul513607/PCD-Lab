@@ -122,7 +122,7 @@ public class UdpClientHandler implements Runnable, ClientHandler {
     }
 
     private void handleMessageFile(byte[] message, int clientNumber) {
-        File file = new File("dir/receivedFile_client_" + clientNumber + ".txt");
+        File file = new File("/home/paul/tempData/server/receivedFile_client_" + clientNumber + ".txt");
         try {
             file.createNewFile();
             FileOutputStream fileOutputStream = new FileOutputStream(file);

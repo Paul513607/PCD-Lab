@@ -47,9 +47,6 @@ public class ServerApp {
             stopAndWait = true;
         }
 
-        stopAndWait = false;
-        streaming = !stopAndWait;
-
         server.startServer(protocol, port, maxClients);
     }
 }
