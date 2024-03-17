@@ -35,26 +35,23 @@ public class TcpClientHandler implements Runnable, ClientHandler {
             while (true) {
                 int messageSize = readMessageSize(in, out);
                 System.out.println("Received message size: " + messageSize + " bytes");
-                if (messageSize > MAX_MESSAGE_SIZE) {
-                    sendStatus(out, "[ERROR] Message size exceeds maximum allowed size", true);
-                    continue;
-                }
                 sendStatus(out, "[OK] Message Size Received", true);
 
-                if (messageSize == 3 && Arrays.equals(readMessage(in, out, messageSize), "END".getBytes())) {
+                ReadDto dto = readMessage(in, out, messageSize);
+                byte[] message = dto.getMessage();
+
+                if (messageSize == 3 && Arrays.equals(message, "END".getBytes())) {
                     sendStatus(out, "[OK] End Signal Received", true);
                     break;
                 }
-
-                byte[] message = readMessage(in, out, messageSize);
 
                 sendStatus(out, "[OK] Message Received", false);
 
                 // handleMessageString(message, clientNumber);
                 handleMessageFile(message, clientNumber);
 
-                totalMessageCount++;
-                totalMessageBytes += messageSize;
+                totalMessageCount += dto.getNumMessages();
+                totalMessageBytes += dto.getBytesRead();
             }
 
             server.addTotalMessageBytes(totalMessageBytes);
@@ -91,10 +88,11 @@ public class TcpClientHandler implements Runnable, ClientHandler {
     }
 
 
-    private byte[] readMessage(DataInputStream in, DataOutputStream out, long messageSize) throws IOException {
+    private ReadDto readMessage(DataInputStream in, DataOutputStream out, long messageSize) throws IOException {
         trafficMonitor.addBytesSent(messageSize);
         byte[] buffer = new byte[ServerApp.CHUNK_SIZE];
         long totalBytesRead = 0;
+        int numMessages = 0;
         int bytesRead;
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -105,12 +103,14 @@ public class TcpClientHandler implements Runnable, ClientHandler {
             }
             byteArrayOutputStream.write(buffer, 0, bytesRead);
             totalBytesRead += bytesRead;
-
+            numMessages++;
             sendStatus(out, "[OK] Chunk Received", false);
+            System.out.println("Received chunk: " + buffer.length + " bytes");
+
         }
         trafficMonitor.addBytesReceived(totalBytesRead);
 
-        return byteArrayOutputStream.toByteArray();
+        return new ReadDto(byteArrayOutputStream.toByteArray(), totalBytesRead, numMessages);
     }
 
     private void handleMessageString(byte[] message, int clientNumber) {
@@ -118,7 +118,7 @@ public class TcpClientHandler implements Runnable, ClientHandler {
     }
 
     private void handleMessageFile(byte[] message, int clientNumber) {
-        File file = new File("/home/paul/tempData/server/receivedFile_client_" + clientNumber + ".txt");
+        File file = new File("./Cristian_Frasinaru-Curs_practic_de_Java.pdf");
         try {
             file.createNewFile();
             FileOutputStream fileOutputStream = new FileOutputStream(file);

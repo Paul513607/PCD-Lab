@@ -4,6 +4,8 @@ public class TrafficMonitor {
     private long totalBytesSent;
     private long totalBytesReceived;
 
+    private long numMessagesRead;
+
     public synchronized void addBytesSent(long bytes) {
         totalBytesSent += bytes;
     }
@@ -18,5 +20,13 @@ public class TrafficMonitor {
 
     public synchronized long getBytesReceived() {
         return totalBytesReceived;
+    }
+
+    public synchronized void addMessagesRead() {
+        numMessagesRead++;
+    }
+
+    public synchronized long getMessagesRead() {
+        return numMessagesRead;
     }
 }

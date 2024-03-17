@@ -4,8 +4,8 @@ import java.io.*;
 import java.net.Socket;
 
 public class ClientApp {
-    public static final int CHUNK_SIZE = 1024;
-    public static final String ADDRESS = "localhost";
+    public static final int CHUNK_SIZE = 65000;
+    public static final String ADDRESS = "ec2-**-**-**-***.eu-north-1.compute.amazonaws.com";
     public static final int PORT = 12345;
     public static final String LARGE_FILE_PATH = "/home/paul/tempData/client/largeFile.txt";
 
@@ -17,7 +17,7 @@ public class ClientApp {
         int port = PORT;
 
         // 64 KB, 1MB, 100MB, 500MB, 1GB, 5GB, 10GB
-        int numMessages = 1 * 16;
+        int numMessages = 1;
 
         String protocol = "tcp";
         Client client;

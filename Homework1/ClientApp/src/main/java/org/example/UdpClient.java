@@ -29,10 +29,12 @@ public class UdpClient implements Client {
                 totalMessageBytes += sendSizeAndMessage(clientSocket, serverAddress, message);
             }
 
-            sendMessageEnd(clientSocket, serverAddress, 0);
 
             long endTime = System.currentTimeMillis();
             long transmissionTime = endTime - startTime;
+
+            sendMessageEnd(clientSocket, serverAddress, 0);
+
 
             printClientStatistics("UDP", numMessages, totalMessageBytes, transmissionTime);
 
@@ -61,14 +63,16 @@ public class UdpClient implements Client {
         sendMessage(socket, serverAddress, sizeBytes);
 
         int totalBytesSent = 0;
-        int chunkSize = 1024;
+        int chunkSize = ClientApp.CHUNK_SIZE;
 
         for (int offset = 0; offset < messageBytes.length; offset += chunkSize) {
+            Thread.sleep(10);
             int remainingBytes = Math.min(chunkSize, messageBytes.length - offset);
             byte[] chunk = Arrays.copyOfRange(messageBytes, offset, offset + remainingBytes);
 
             sendMessage(socket, serverAddress, chunk);
             totalBytesSent += remainingBytes;
+            System.out.println(totalBytesSent);
 
             readStatus(socket, false);
         }
@@ -142,6 +146,6 @@ public class UdpClient implements Client {
     }
 
     private byte[] buildMessageLargeFile() {
-        return buildMessageFile("/home/paul/tempData/client/largeFile.txt");
+        return buildMessageFile("/home/paul/Cristian_Frasinaru-Curs_practic_de_Java.pdf");
     }
 }

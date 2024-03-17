@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ServerApp {
-    public static final int CHUNK_SIZE = 1024;
+        public static final int CHUNK_SIZE = 65000;
     public static final int PORT = 12345;
     public static final int MAX_CLIENTS = 5;
 

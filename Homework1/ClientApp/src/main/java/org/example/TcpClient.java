@@ -7,9 +7,13 @@ public class TcpClient implements Client {
     @Override
     public void startClient(String protocol, String host, int port, int numMessages) {
         try {
+            System.out.println("Starting TCP client at " + host + ":" + port + "...");
             Socket clientSocket = new Socket(host, port);
+            System.out.println("Connected to TCP server at " + host + ":" + port + "...");
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
+            System.out.println("DataInputStream created...");
             DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+            System.out.println("DataOutputStream created...");
 
             System.out.println("Connecting to TCP server at " + host + ":" + port + "...");
 
@@ -112,6 +116,6 @@ public class TcpClient implements Client {
     }
 
     private byte[] buildMessageLargeFile() {
-        return buildMessageFile("/home/paul/tempData/client/largeFile.txt");
+        return buildMessageFile("/home/paul/Cristian_Frasinaru-Curs_practic_de_Java.pdf");
     }
 }
